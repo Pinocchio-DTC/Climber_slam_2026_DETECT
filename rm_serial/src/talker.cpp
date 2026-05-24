@@ -85,9 +85,9 @@
     // --- cmd_vel_callback 实现 (发送速度到下位机) ---
     void ReceiveNode::cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
     {
-        cached_vx_ = static_cast<int16_t>(msg->linear.x * 2000);
-        cached_vy_ = static_cast<int16_t>(msg->linear.y * 2000);
-        cached_vz_ = static_cast<int16_t>(msg->angular.z * 2000);
+        cached_vx_ = static_cast<int16_t>(msg->linear.x * 1000);
+        cached_vy_ = static_cast<int16_t>(msg->linear.y * 1000);
+        cached_vz_ = static_cast<int16_t>(msg->angular.z * 1000);
 
         if (!is_serial_open_)
             return;

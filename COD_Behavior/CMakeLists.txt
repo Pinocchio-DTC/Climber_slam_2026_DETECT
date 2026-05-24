@@ -87,6 +87,7 @@ install(TARGETS tree_1
 
 install(DIRECTORY
         launch
+        cod_bt
         DESTINATION share/${PROJECT_NAME}
 )
 ament_package()

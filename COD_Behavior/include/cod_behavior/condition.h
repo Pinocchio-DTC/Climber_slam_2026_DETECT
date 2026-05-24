@@ -25,7 +25,7 @@ public:
         }
         const float hp = hp_.value();
         const float threshold = threshold_.value();
-        if (hp < threshold) {
+        if (hp <= threshold) {
             return BT::NodeStatus::SUCCESS;
         }
 
@@ -118,5 +118,74 @@ public:
             return BT::NodeStatus::SUCCESS;
         }
         return BT::NodeStatus::FAILURE;
+    }
+};
+
+class EnemyOutpostDeadCondition : public BT::ConditionNode {
+public:
+    EnemyOutpostDeadCondition(const std::string &name, const BT::NodeConfiguration &config)
+        : BT::ConditionNode(name, config) {}
+
+    static BT::PortsList providedPorts() {
+        return {
+            BT::InputPort<bool>("Enemy_outpost_alive")
+        };
+    }
+
+    BT::NodeStatus tick() override {
+        auto enemy_outpost_alive_ = getInput<bool>("Enemy_outpost_alive");
+        if (!enemy_outpost_alive_) {
+            throw BT::RuntimeError(
+                "missing input [Enemy_outpost_alive]: ", enemy_outpost_alive_.error()
+            );
+        }
+
+        return enemy_outpost_alive_.value() ? BT::NodeStatus::FAILURE : BT::NodeStatus::SUCCESS;
+    }
+};
+
+class BoolEqualsCondition : public BT::ConditionNode {
+public:
+    BoolEqualsCondition(const std::string &name, const BT::NodeConfiguration &config)
+        : BT::ConditionNode(name, config) {}
+
+    static BT::PortsList providedPorts() {
+        return {
+            BT::InputPort<bool>("value"),
+            BT::InputPort<bool>("expected")
+        };
+    }
+
+    BT::NodeStatus tick() override {
+        auto value_ = getInput<bool>("value");
+        auto expected_ = getInput<bool>("expected");
+        if (!value_ || !expected_) {
+            throw BT::RuntimeError("missing input [value] or [expected]");
+        }
+
+        return value_.value() == expected_.value() ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+    }
+};
+
+class MatchTimeAboveCondition : public BT::ConditionNode {
+public:
+    MatchTimeAboveCondition(const std::string &name, const BT::NodeConfiguration &config)
+        : BT::ConditionNode(name, config) {}
+
+    static BT::PortsList providedPorts() {
+        return {
+            BT::InputPort<int>("Match_time"),
+            BT::InputPort<int>("threshold", 0, "match time must be greater than this threshold")
+        };
+    }
+
+    BT::NodeStatus tick() override {
+        auto match_time = getInput<int>("Match_time");
+        auto threshold = getInput<int>("threshold");
+        if (!match_time || !threshold) {
+            throw BT::RuntimeError("missing input [Match_time] or [threshold]");
+        }
+
+        return match_time.value() > threshold.value() ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
     }
 };

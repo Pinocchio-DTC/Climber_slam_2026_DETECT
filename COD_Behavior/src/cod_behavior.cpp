@@ -80,6 +80,7 @@ int main(int argc, char **argv) {
         }
     );
     factory.registerNodeType<AnnounceBehavior>("AnnounceBehavior");
+    factory.registerNodeType<SetBool>("SetBool");
     factory.registerBuilder<SetSentryMode>(
         "SetSentryMode",
         [&](const std::string &name, const BT::NodeConfig &config) {
@@ -91,11 +92,15 @@ int main(int argc, char **argv) {
     factory.registerNodeType<HpAboveCondition>("HpAboveCondition");
     factory.registerNodeType<StayHome>("StayHome");
     factory.registerNodeType<BaseHpBelowCondition>("BaseHpBelowCondition");
+    factory.registerNodeType<EnemyOutpostDeadCondition>("EnemyOutpostDeadCondition");
+    factory.registerNodeType<BoolEqualsCondition>("BoolEqualsCondition");
+    factory.registerNodeType<MatchTimeAboveCondition>("MatchTimeAboveCondition");
 
     // PubNav2Goal 巡逻方案节点
     factory.registerNodeType<LoadWaypoints>("LoadWaypoints");
     factory.registerNodeType<GetCurrentWaypoint>("GetCurrentWaypoint");
     factory.registerNodeType<NextWaypoint>("NextWaypoint");
+    factory.registerNodeType<NextWaypointUntilDone>("NextWaypointUntilDone");
     factory.registerNodeType<WaitDuration>("WaitDuration");
     factory.registerBuilder<WaitUntilReached>(
         "WaitUntilReached",
@@ -162,6 +167,10 @@ int main(int argc, char **argv) {
         blackboard->set<int>("our_base_hp", 0);
         blackboard->set<int>("sentry_mode", 0);
         blackboard->set<bool>("sentry_buff", false);
+        blackboard->set<int>("match_time", 0);
+        blackboard->set<bool>("front_test_done", false);
+        blackboard->set<bool>("front_middle_done", false);
+        blackboard->set<bool>("save_map_done", false);
         blackboard->set<double>("distance", 0);
         blackboard->set<int>("wp_idx", 0);
         blackboard->set<double>("wait_sec", 5.0);

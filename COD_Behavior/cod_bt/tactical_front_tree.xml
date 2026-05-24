@@ -6,60 +6,71 @@
       <ReactiveFallback>
         <Inverter>
           <WriteToBlackboard Hp="{hp}"
-                             Enemy_outpost_alive="{enemy_outpost_alive}"
-                             Our_outpost_alive="{our_outpost_alive}"
                              Enemy_base_hp="{enemy_base_hp}"
                              Our_base_hp="{our_base_hp}"
                              Sentry_mode="{sentry_mode}"
-                             Sentry_buff="{sentry_buff}"/>
+                             Sentry_buff="{sentry_buff}"
+                             Match_time="{match_time}"/>
         </Inverter>
 
         <ReactiveSequence>
           <HpCondition Hp="{hp}"
-                       threshold="300"/>
+                       threshold="250"/>
+          <SetSentryMode mode="move"
+                         mode_topic="{zone_mode_topic}"/>
+          <AnnounceBehavior label="血量低于等于250，最高优先级执行guli_nan_back路线"/>
+          <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_back.csv"
+                                      frame_id="map"
+                                      current_waypoint="{back_current_waypoint}"/>
+          <StayHome Hp="{hp}"/>
+        </ReactiveSequence>
+
+        <ReactiveSequence>
+          <HpAboveCondition Hp="{hp}"
+                            threshold="250"/>
+          <BoolEqualsCondition value="{front_test_done}"
+                               expected="false"/>
           <Sequence>
             <SetSentryMode mode="move"
                            mode_topic="{zone_mode_topic}"/>
-            <AnnounceBehavior label="低血回家待命"/>
-            <PubNav2Goal goal_pose="{home_position}"
-                         frame_id="map"
-                         min_pub_interval_ms="500"/>
-            <WaitUntilReached goal_pose="{home_position}"
-                              tolerance="0.5"/>
+            <AnnounceBehavior label="高血执行test路线"/>
+            <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_test.csv"
+                                        frame_id="map"
+                                        current_waypoint="{front_current_waypoint}"/>
+            <SetSentryMode mode="attack"
+                           mode_topic="{zone_mode_topic}"/>
+            <AnnounceBehavior label="test路线完成，切换进攻姿态并停留20秒"/>
+            <WaitDuration duration_sec="20"/>
+            <SetBool value="true"
+                     target="{front_test_done}"/>
           </Sequence>
         </ReactiveSequence>
 
         <ReactiveSequence>
-          <Sequence>
-            <SetSentryMode mode="move"
-                           mode_topic="{zone_mode_topic}"/>
-            <AnnounceBehavior label="执行test路线"/>
-            <LoadWaypoints waypoint_file="{front_patrol_csv}"
-                           frame_id="map"
-                           waypoints="{front_waypoints}"
-                           wait_times="{front_wait_times}"
-                           total_waypoints="{front_total_waypoints}"
-                           wp_idx="{front_wp_idx}"/>
-            <KeepRunningUntilFailure>
-              <Sequence>
-                <GetCurrentWaypoint waypoints="{front_waypoints}"
-                                    wait_times="{front_wait_times}"
-                                    wp_idx="{front_wp_idx}"
-                                    current_goal="{front_current_goal}"
-                                    current_wait_sec="{front_current_wait_sec}"/>
-                <Sequence>
-                  <PubNav2Goal goal_pose="{front_current_goal}"
-                               frame_id="map"
-                               min_pub_interval_ms="500"/>
-                  <WaitUntilReached goal_pose="{front_current_goal}"
-                                    tolerance="0.5"/>
-                </Sequence>
-                <WaitDuration duration_sec="{front_current_wait_sec}"/>
-                <NextWaypoint wp_idx="{front_wp_idx}"
-                              total_waypoints="{front_total_waypoints}"/>
-              </Sequence>
-            </KeepRunningUntilFailure>
-          </Sequence>
+          <HpAboveCondition Hp="{hp}"
+                            threshold="250"/>
+          <BoolEqualsCondition value="{front_test_done}"
+                               expected="true"/>
+          <Inverter>
+            <MatchTimeAboveCondition Match_time="{match_time}"
+                                     threshold="400"/>
+          </Inverter>
+          <SetSentryMode mode="attack"
+                         mode_topic="{zone_mode_topic}"/>
+          <AnnounceBehavior label="test路线完成，循环执行go_middle-go_right-go_left"/>
+          <KeepRunningUntilFailure>
+            <Sequence>
+              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_go_middle.csv"
+                                          frame_id="map"
+                                          current_waypoint="{front_loop_middle_current_waypoint}"/>
+              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_go_right.csv"
+                                          frame_id="map"
+                                          current_waypoint="{front_right_current_waypoint}"/>
+              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_go_left.csv"
+                                          frame_id="map"
+                                          current_waypoint="{front_left_current_waypoint}"/>
+            </Sequence>
+          </KeepRunningUntilFailure>
         </ReactiveSequence>
       </ReactiveFallback>
     </KeepRunningUntilFailure>
@@ -84,6 +95,20 @@
       <input_port name="Hp"/>
       <input_port name="threshold"/>
     </Condition>
+    <Condition ID="StayHome"
+               editable="true">
+      <input_port name="Hp"/>
+    </Condition>
+    <Condition ID="BoolEqualsCondition"
+               editable="true">
+      <input_port name="value"/>
+      <input_port name="expected"/>
+    </Condition>
+    <Condition ID="MatchTimeAboveCondition"
+               editable="true">
+      <input_port name="Match_time"/>
+      <input_port name="threshold"/>
+    </Condition>
     <Condition ID="BaseHpBelowCondition"
                editable="true">
       <input_port name="Our_base_hp"/>
@@ -103,6 +128,11 @@
       <inout_port name="wp_idx"/>
       <input_port name="total_waypoints"/>
     </Action>
+    <Action ID="NextWaypointUntilDone"
+            editable="true">
+      <inout_port name="wp_idx"/>
+      <input_port name="total_waypoints"/>
+    </Action>
     <Action ID="PubNav2Goal"
             editable="true">
       <input_port name="goal_pose"/>
@@ -113,16 +143,28 @@
             editable="true">
       <input_port name="label"/>
     </Action>
+    <Action ID="SetBool"
+            editable="true">
+      <input_port name="value"/>
+      <output_port name="target"/>
+    </Action>
     <Action ID="FollowWaypointsAction"
             editable="true">
       <input_port name="waypoint_file"/>
       <input_port name="frame_id"/>
+    </Action>
+    <Action ID="NavigateThroughPosesAction"
+            editable="true">
+      <input_port name="waypoint_file"/>
+      <input_port name="frame_id"/>
+      <output_port name="current_waypoint"/>
     </Action>
     <Action ID="SetSentryMode"
             editable="true">
       <input_port name="mode"/>
       <input_port name="mode_topic"/>
       <input_port name="enable_auto_fallback"/>
+      <input_port name="republish_interval_ms"/>
     </Action>
     <Action ID="WaitDuration"
             editable="true">
@@ -136,12 +178,11 @@
     <Action ID="WriteToBlackboard"
             editable="true">
       <output_port name="Hp"/>
-      <output_port name="Enemy_outpost_alive"/>
-      <output_port name="Our_outpost_alive"/>
       <output_port name="Enemy_base_hp"/>
       <output_port name="Our_base_hp"/>
       <output_port name="Sentry_mode"/>
       <output_port name="Sentry_buff"/>
+      <output_port name="Match_time"/>
     </Action>
   </TreeNodesModel>
 </root>

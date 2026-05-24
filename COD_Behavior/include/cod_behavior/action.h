@@ -106,6 +106,29 @@ private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr behavior_pub_;
 };
 
+class SetBool : public BT::SyncActionNode {
+public:
+    SetBool(const std::string &name, const BT::NodeConfiguration &config)
+        : BT::SyncActionNode(name, config) {}
+
+    static BT::PortsList providedPorts() {
+        return {
+            BT::InputPort<bool>("value"),
+            BT::OutputPort<bool>("target")
+        };
+    }
+
+    BT::NodeStatus tick() override {
+        auto value_res = getInput<bool>("value");
+        if (!value_res) {
+            throw BT::RuntimeError("读取端口[value]时出错:", value_res.error());
+        }
+
+        setOutput("target", value_res.value());
+        return BT::NodeStatus::SUCCESS;
+    }
+};
+
 class SendNav2Goal : public BT::RosActionNode<nav2_msgs::action::NavigateToPose> {
 public:
     // 构造函数：初始化节点名称、配置和ROS2参数
@@ -439,6 +462,7 @@ public:
             BT::InputPort<std::string>("mode", "defense", "要发送的哨兵模式: move/attack/defense"),
             BT::InputPort<std::string>("mode_topic", "/sentry_mode_cmd", "模式命令话题"),
             BT::InputPort<bool>("enable_auto_fallback", false, "同一模式持续过久后是否自动切换到 fallback 模式"),
+            BT::InputPort<int>("republish_interval_ms", 500, "同一模式命令的重发间隔，<=0 表示只在变化时发布"),
         };
     }
 
@@ -449,6 +473,8 @@ public:
         const std::string mode_topic = (topic_res && !topic_res.value().empty()) ? topic_res.value() : "/sentry_mode_cmd";
         const auto fallback_res = getInput<bool>("enable_auto_fallback");
         const bool enable_auto_fallback = fallback_res ? fallback_res.value() : false;
+        const auto republish_res = getInput<int>("republish_interval_ms");
+        const int republish_interval_ms = republish_res ? republish_res.value() : 500;
 
         if (modeToValue(mode_name) < 0) {
             RCLCPP_ERROR(rclcpp::get_logger("SetSentryMode"),
@@ -503,8 +529,16 @@ public:
         } catch (const std::exception &) {
         }
 
-        if (current_mode == target_mode && current_mode_name == publish_mode_name) {
+        bool same_mode = current_mode == target_mode && current_mode_name == publish_mode_name;
+        if (same_mode && republish_interval_ms <= 0) {
             return BT::NodeStatus::SUCCESS;
+        }
+        if (same_mode) {
+            const double last_publish_at = getBlackboardValue<double>("last_sentry_mode_publish_at", 0.0);
+            const double elapsed_ms = (now - last_publish_at) * 1000.0;
+            if (elapsed_ms < static_cast<double>(republish_interval_ms)) {
+                return BT::NodeStatus::SUCCESS;
+            }
         }
 
         if (!mode_pub_ || mode_topic != current_topic_) {
@@ -518,6 +552,7 @@ public:
 
         config().blackboard->set("current_sentry_mode", target_mode);
         config().blackboard->set("current_sentry_mode_name", publish_mode_name);
+        config().blackboard->set("last_sentry_mode_publish_at", now);
 
         RCLCPP_INFO(global_node_->get_logger(),
                     "SetSentryMode: 发布模式 %s(%d) 到 %s, 期望模式 %s",
@@ -595,6 +630,7 @@ public:
             BT::OutputPort<int>("Our_base_hp"),
             BT::OutputPort<int>("Sentry_mode"),
             BT::OutputPort<bool>("Sentry_buff"),
+            BT::OutputPort<int>("Match_time"),
         };
     }
 
@@ -606,6 +642,7 @@ public:
     int our_base_hp = 0;
     int sentry_mode = 0;
     bool sentry_buff = false;
+    int match_time = 0;
 
     BT::NodeStatus tick() override {
         if (!is_ReadInterface_)
@@ -619,6 +656,7 @@ public:
         setOutput("Our_base_hp", our_base_hp);
         setOutput("Sentry_mode", sentry_mode);
         setOutput("Sentry_buff", sentry_buff);
+        setOutput("Match_time", match_time);
 
         return BT::NodeStatus::SUCCESS;
     }
@@ -632,6 +670,7 @@ public:
         our_base_hp = static_cast<int>(msg->our_base_hp);
         sentry_mode = static_cast<int>(msg->sentry_mode);
         sentry_buff = msg->sentry_buff;
+        match_time = static_cast<int>(msg->match_time);
 
         is_ReadInterface_ = true;
         RCLCPP_INFO(global_node_->get_logger(),
@@ -896,6 +935,51 @@ public:
         int next = (idx + 1) % total;
 
         RCLCPP_INFO(rclcpp::get_logger("NextWaypoint"),
+                    "航点切换: %d -> %d (共 %d 个)", idx, next, total);
+
+        setOutput("wp_idx", next);
+        return BT::NodeStatus::SUCCESS;
+    }
+};
+
+// 切换到下一个航点；最后一个航点完成后返回 FAILURE，让外层 KeepRunningUntilFailure 结束本路线
+class NextWaypointUntilDone : public BT::SyncActionNode {
+public:
+    NextWaypointUntilDone(const std::string &name, const BT::NodeConfiguration &config)
+        : BT::SyncActionNode(name, config) {}
+
+    static BT::PortsList providedPorts() {
+        return {
+            BT::BidirectionalPort<int>("wp_idx", "当前航点索引"),
+            BT::InputPort<int>("total_waypoints", "航点总数"),
+        };
+    }
+
+    BT::NodeStatus tick() override {
+        auto idx_res = getInput<int>("wp_idx");
+        auto total_res = getInput<int>("total_waypoints");
+
+        if (!idx_res || !total_res) {
+            RCLCPP_ERROR(rclcpp::get_logger("NextWaypointUntilDone"), "读取端口失败");
+            return BT::NodeStatus::FAILURE;
+        }
+
+        int idx = idx_res.value();
+        int total = total_res.value();
+        if (total <= 0) {
+            RCLCPP_ERROR(rclcpp::get_logger("NextWaypointUntilDone"), "航点总数无效: %d", total);
+            return BT::NodeStatus::FAILURE;
+        }
+
+        if (idx + 1 >= total) {
+            RCLCPP_INFO(rclcpp::get_logger("NextWaypointUntilDone"),
+                        "路线完成: 最后航点 %d / %d 已到达", idx, total);
+            setOutput("wp_idx", total);
+            return BT::NodeStatus::FAILURE;
+        }
+
+        int next = idx + 1;
+        RCLCPP_INFO(rclcpp::get_logger("NextWaypointUntilDone"),
                     "航点切换: %d -> %d (共 %d 个)", idx, next, total);
 
         setOutput("wp_idx", next);

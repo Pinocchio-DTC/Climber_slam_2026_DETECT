@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4"
+      main_tree_to_execute="Main_tree">
+  <BehaviorTree ID="Main_tree">
+    <KeepRunningUntilFailure>
+      <ReactiveFallback>
+        <Inverter>
+          <WriteToBlackboard Hp="{hp}"
+                             Enemy_outpost_alive="{enemy_outpost_alive}"
+                             Our_outpost_alive="{our_outpost_alive}"
+                             Enemy_base_hp="{enemy_base_hp}"
+                             Our_base_hp="{our_base_hp}"
+                             Sentry_mode="{sentry_mode}"
+                             Sentry_buff="{sentry_buff}"
+                             Match_time="{match_time}"/>
+        </Inverter>
+
+        <ReactiveSequence>
+          <MatchTimeAboveCondition Match_time="{match_time}"
+                                   threshold="0"/>
+          <BoolEqualsCondition value="{save_map_done}"
+                               expected="false"/>
+          <SetSentryMode mode="move"
+                         mode_topic="{zone_mode_topic}"/>
+          <AnnounceBehavior label="比赛时间大于0，执行save_map路线"/>
+          <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/save_map.csv"
+                                      frame_id="map"
+                                      current_waypoint="{save_map_current_waypoint}"/>
+          <SetBool value="true"
+                   target="{save_map_done}"/>
+        </ReactiveSequence>
+
+        <BoolEqualsCondition value="{save_map_done}"
+                             expected="true"/>
+      </ReactiveFallback>
+    </KeepRunningUntilFailure>
+  </BehaviorTree>
+
+  <TreeNodesModel>
+    <Condition ID="MatchTimeAboveCondition"
+               editable="true">
+      <input_port name="Match_time"/>
+      <input_port name="threshold"/>
+    </Condition>
+    <Condition ID="BoolEqualsCondition"
+               editable="true">
+      <input_port name="value"/>
+      <input_port name="expected"/>
+    </Condition>
+    <Action ID="AnnounceBehavior"
+            editable="true">
+      <input_port name="label"/>
+    </Action>
+    <Action ID="SetBool"
+            editable="true">
+      <input_port name="value"/>
+      <output_port name="target"/>
+    </Action>
+    <Action ID="NavigateThroughPosesAction"
+            editable="true">
+      <input_port name="waypoint_file"/>
+      <input_port name="frame_id"/>
+      <output_port name="current_waypoint"/>
+    </Action>
+    <Action ID="SetSentryMode"
+            editable="true">
+      <input_port name="mode"/>
+      <input_port name="mode_topic"/>
+      <input_port name="enable_auto_fallback"/>
+    </Action>
+    <Action ID="WriteToBlackboard"
+            editable="true">
+      <output_port name="Hp"/>
+      <output_port name="Enemy_outpost_alive"/>
+      <output_port name="Our_outpost_alive"/>
+      <output_port name="Enemy_base_hp"/>
+      <output_port name="Our_base_hp"/>
+      <output_port name="Sentry_mode"/>
+      <output_port name="Sentry_buff"/>
+      <output_port name="Match_time"/>
+    </Action>
+  </TreeNodesModel>
+</root>
