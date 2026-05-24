@@ -189,3 +189,26 @@ public:
         return match_time.value() > threshold.value() ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
     }
 };
+
+class RemainingRoundsBelowCondition : public BT::ConditionNode {
+public:
+    RemainingRoundsBelowCondition(const std::string &name, const BT::NodeConfiguration &config)
+        : BT::ConditionNode(name, config) {}
+
+    static BT::PortsList providedPorts() {
+        return {
+            BT::InputPort<int>("Remaining_rounds"),
+            BT::InputPort<int>("threshold", 50, "remaining rounds must be less than this threshold")
+        };
+    }
+
+    BT::NodeStatus tick() override {
+        auto remaining = getInput<int>("Remaining_rounds");
+        auto threshold = getInput<int>("threshold");
+        if (!remaining || !threshold) {
+            throw BT::RuntimeError("missing input [Remaining_rounds] or [threshold]");
+        }
+
+        return remaining.value() < threshold.value() ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+    }
+};

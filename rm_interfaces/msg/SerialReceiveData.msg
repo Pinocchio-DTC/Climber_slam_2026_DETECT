@@ -19,7 +19,7 @@ uint16 enemy_sentry_blood
 uint16 hp
 bool enemy_outpost_alive
 bool our_outpost_alive
-uint16 enemy_base_hp
+uint16 remaining_rounds
 uint16 our_base_hp
 uint8 sentry_mode
 bool sentry_buff

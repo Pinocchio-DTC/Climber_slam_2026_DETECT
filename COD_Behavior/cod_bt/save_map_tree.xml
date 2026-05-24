@@ -8,7 +8,7 @@
           <WriteToBlackboard Hp="{hp}"
                              Enemy_outpost_alive="{enemy_outpost_alive}"
                              Our_outpost_alive="{our_outpost_alive}"
-                             Enemy_base_hp="{enemy_base_hp}"
+                             Remaining_rounds="{remaining_rounds}"
                              Our_base_hp="{our_base_hp}"
                              Sentry_mode="{sentry_mode}"
                              Sentry_buff="{sentry_buff}"
@@ -73,7 +73,7 @@
       <output_port name="Hp"/>
       <output_port name="Enemy_outpost_alive"/>
       <output_port name="Our_outpost_alive"/>
-      <output_port name="Enemy_base_hp"/>
+      <output_port name="Remaining_rounds"/>
       <output_port name="Our_base_hp"/>
       <output_port name="Sentry_mode"/>
       <output_port name="Sentry_buff"/>

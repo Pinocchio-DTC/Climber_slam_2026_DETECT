@@ -95,6 +95,7 @@ int main(int argc, char **argv) {
     factory.registerNodeType<EnemyOutpostDeadCondition>("EnemyOutpostDeadCondition");
     factory.registerNodeType<BoolEqualsCondition>("BoolEqualsCondition");
     factory.registerNodeType<MatchTimeAboveCondition>("MatchTimeAboveCondition");
+    factory.registerNodeType<RemainingRoundsBelowCondition>("RemainingRoundsBelowCondition");
 
     // PubNav2Goal 巡逻方案节点
     factory.registerNodeType<LoadWaypoints>("LoadWaypoints");
@@ -163,7 +164,7 @@ int main(int argc, char **argv) {
         blackboard->set<float>("hp", 400.0);
         blackboard->set<bool>("enemy_outpost_alive", false);
         blackboard->set<bool>("our_outpost_alive", false);
-        blackboard->set<int>("enemy_base_hp", 0);
+        blackboard->set<int>("remaining_rounds", 0);
         blackboard->set<int>("our_base_hp", 0);
         blackboard->set<int>("sentry_mode", 0);
         blackboard->set<bool>("sentry_buff", false);
@@ -171,6 +172,8 @@ int main(int argc, char **argv) {
         blackboard->set<bool>("front_test_done", false);
         blackboard->set<bool>("front_middle_done", false);
         blackboard->set<bool>("save_map_done", false);
+        blackboard->set<bool>("on_left_leg", false);
+        blackboard->set<bool>("on_right_leg", false);
         blackboard->set<double>("distance", 0);
         blackboard->set<int>("wp_idx", 0);
         blackboard->set<double>("wait_sec", 5.0);

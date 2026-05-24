@@ -6,7 +6,7 @@
       <ReactiveFallback>
         <Inverter>
           <WriteToBlackboard Hp="{hp}"
-                             Enemy_base_hp="{enemy_base_hp}"
+                             Remaining_rounds="{remaining_rounds}"
                              Our_base_hp="{our_base_hp}"
                              Sentry_mode="{sentry_mode}"
                              Sentry_buff="{sentry_buff}"
@@ -14,15 +14,45 @@
         </Inverter>
 
         <ReactiveSequence>
-          <HpCondition Hp="{hp}"
-                       threshold="250"/>
-          <SetSentryMode mode="move"
-                         mode_topic="{zone_mode_topic}"/>
-          <AnnounceBehavior label="血量低于等于250，最高优先级执行guli_nan_back路线"/>
-          <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_back.csv"
-                                      frame_id="map"
-                                      current_waypoint="{back_current_waypoint}"/>
-          <StayHome Hp="{hp}"/>
+          <Fallback>
+            <HpCondition Hp="{hp}"
+                         threshold="250"/>
+            <RemainingRoundsBelowCondition Remaining_rounds="{remaining_rounds}"
+                                          threshold="50"/>
+          </Fallback>
+          <Fallback>
+            <Sequence>
+              <BoolEqualsCondition value="{on_left_leg}"
+                                   expected="true"/>
+              <SetSentryMode mode="move"
+                             mode_topic="{zone_mode_topic}"/>
+              <AnnounceBehavior label="左路巡逻撤退，执行rmuc1_left_back"/>
+              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/rmuc1_left_back.csv"
+                                          frame_id="map"
+                                          current_waypoint="{back_current_waypoint}"/>
+              <StayHome Hp="{hp}"/>
+            </Sequence>
+            <Sequence>
+              <BoolEqualsCondition value="{on_right_leg}"
+                                   expected="true"/>
+              <SetSentryMode mode="move"
+                             mode_topic="{zone_mode_topic}"/>
+              <AnnounceBehavior label="右路巡逻撤退，执行rmuc1_right_back"/>
+              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/rmuc1_right_back.csv"
+                                          frame_id="map"
+                                          current_waypoint="{back_current_waypoint}"/>
+              <StayHome Hp="{hp}"/>
+            </Sequence>
+            <Sequence>
+              <SetSentryMode mode="move"
+                             mode_topic="{zone_mode_topic}"/>
+              <AnnounceBehavior label="非巡逻中触发撤退，执行rmuc1_left_back"/>
+              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/rmuc1_left_back.csv"
+                                          frame_id="map"
+                                          current_waypoint="{back_current_waypoint}"/>
+              <StayHome Hp="{hp}"/>
+            </Sequence>
+          </Fallback>
         </ReactiveSequence>
 
         <ReactiveSequence>
@@ -34,16 +64,25 @@
             <SetSentryMode mode="move"
                            mode_topic="{zone_mode_topic}"/>
             <AnnounceBehavior label="高血执行test路线"/>
-            <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_test.csv"
+            <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/rmuc1_push.csv"
                                         frame_id="map"
                                         current_waypoint="{front_current_waypoint}"/>
             <SetSentryMode mode="attack"
                            mode_topic="{zone_mode_topic}"/>
-            <AnnounceBehavior label="test路线完成，切换进攻姿态并停留20秒"/>
-            <WaitDuration duration_sec="20"/>
+            <AnnounceBehavior label="test路线完成，切换进攻姿态"/>
             <SetBool value="true"
                      target="{front_test_done}"/>
           </Sequence>
+        </ReactiveSequence>
+
+        <ReactiveSequence>
+          <HpAboveCondition Hp="{hp}"
+                            threshold="250"/>
+          <BoolEqualsCondition value="{front_test_done}"
+                               expected="true"/>
+          <MatchTimeAboveCondition Match_time="{match_time}"
+                                   threshold="180"/>
+          <WaitDuration duration_sec="0.5"/>
         </ReactiveSequence>
 
         <ReactiveSequence>
@@ -57,18 +96,25 @@
           </Inverter>
           <SetSentryMode mode="attack"
                          mode_topic="{zone_mode_topic}"/>
-          <AnnounceBehavior label="test路线完成，循环执行go_middle-go_right-go_left"/>
+          <AnnounceBehavior label="test路线完成，循环执行rmuc1_right-rmuc1_left"/>
           <KeepRunningUntilFailure>
             <Sequence>
-              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_go_middle.csv"
+              <SetBool value="false"
+                       target="{on_left_leg}"/>
+              <SetBool value="true"
+                       target="{on_right_leg}"/>
+              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/rmuc1_right.csv"
                                           frame_id="map"
-                                          current_waypoint="{front_loop_middle_current_waypoint}"/>
-              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_go_right.csv"
+                                          current_waypoint="{patrol_current_waypoint}"/>
+              <WaitDuration duration_sec="10"/>
+              <SetBool value="false"
+                       target="{on_right_leg}"/>
+              <SetBool value="true"
+                       target="{on_left_leg}"/>
+              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/rmuc1_left.csv"
                                           frame_id="map"
-                                          current_waypoint="{front_right_current_waypoint}"/>
-              <NavigateThroughPosesAction waypoint_file="/home/nucshao/Climber_slam_2026_NAV/src/rm_bringup/wps/guli_nan_go_left.csv"
-                                          frame_id="map"
-                                          current_waypoint="{front_left_current_waypoint}"/>
+                                          current_waypoint="{patrol_current_waypoint}"/>
+              <WaitDuration duration_sec="10"/>
             </Sequence>
           </KeepRunningUntilFailure>
         </ReactiveSequence>
@@ -107,6 +153,11 @@
     <Condition ID="MatchTimeAboveCondition"
                editable="true">
       <input_port name="Match_time"/>
+      <input_port name="threshold"/>
+    </Condition>
+    <Condition ID="RemainingRoundsBelowCondition"
+               editable="true">
+      <input_port name="Remaining_rounds"/>
       <input_port name="threshold"/>
     </Condition>
     <Condition ID="BaseHpBelowCondition"
@@ -178,7 +229,7 @@
     <Action ID="WriteToBlackboard"
             editable="true">
       <output_port name="Hp"/>
-      <output_port name="Enemy_base_hp"/>
+      <output_port name="Remaining_rounds"/>
       <output_port name="Our_base_hp"/>
       <output_port name="Sentry_mode"/>
       <output_port name="Sentry_buff"/>

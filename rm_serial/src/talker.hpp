@@ -55,7 +55,7 @@ struct DownlinkDataSeven
     uint8_t enemy_outpost_alive;
     uint8_t our_outpost_alive;
     uint32_t match_time;
-    uint16_t enemy_base_hp;
+    uint16_t remaining_rounds;
     uint16_t our_base_hp;
     uint8_t sentry_mode;
     uint8_t sentry_buff;

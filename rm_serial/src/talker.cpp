@@ -363,7 +363,7 @@
             uint8_t enemy_outpost_alive_val = data->enemy_outpost_alive;
             uint8_t our_outpost_alive_val = data->our_outpost_alive;
             uint32_t match_time_val = ntohl(data->match_time);
-            uint16_t enemy_base_hp_val = ntohs(data->enemy_base_hp);
+            uint16_t remaining_rounds_val = ntohs(data->remaining_rounds);
             uint16_t our_base_hp_val = ntohs(data->our_base_hp);
             uint8_t sentry_mode_val = data->sentry_mode;
             uint8_t sentry_buff_val = data->sentry_buff;
@@ -374,7 +374,7 @@
                 msg.hp = hp_val;
                 msg.enemy_outpost_alive = (enemy_outpost_alive_val != 0);
                 msg.our_outpost_alive = (our_outpost_alive_val != 0);
-                msg.enemy_base_hp = enemy_base_hp_val;
+                msg.remaining_rounds = remaining_rounds_val;
                 msg.our_base_hp = our_base_hp_val;
                 msg.sentry_mode = sentry_mode_val;
                 msg.sentry_buff = (sentry_buff_val != 0);
@@ -386,7 +386,7 @@
                     << " hp=" << hp_val
                     << " enemy_outpost=" << static_cast<int>(enemy_outpost_alive_val)
                     << " our_outpost=" << static_cast<int>(our_outpost_alive_val)
-                    << " enemy_base_hp=" << enemy_base_hp_val
+                    << " remaining_rounds=" << remaining_rounds_val
                     << " our_base_hp=" << our_base_hp_val
                     << " sentry_mode=" << static_cast<int>(sentry_mode_val)
                     << " sentry_buff=" << static_cast<int>(sentry_buff_val);

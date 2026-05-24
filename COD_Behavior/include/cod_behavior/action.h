@@ -626,7 +626,7 @@ public:
             BT::OutputPort<float>("Hp"),
             BT::OutputPort<bool>("Enemy_outpost_alive"),
             BT::OutputPort<bool>("Our_outpost_alive"),
-            BT::OutputPort<int>("Enemy_base_hp"),
+            BT::OutputPort<int>("Remaining_rounds"),
             BT::OutputPort<int>("Our_base_hp"),
             BT::OutputPort<int>("Sentry_mode"),
             BT::OutputPort<bool>("Sentry_buff"),
@@ -638,7 +638,7 @@ public:
     float hp = 400;
     bool enemy_outpost_alive = false;
     bool our_outpost_alive = false;
-    int enemy_base_hp = 0;
+    int remaining_rounds = 0;
     int our_base_hp = 0;
     int sentry_mode = 0;
     bool sentry_buff = false;
@@ -652,7 +652,7 @@ public:
         setOutput("Hp", hp);
         setOutput("Enemy_outpost_alive", enemy_outpost_alive);
         setOutput("Our_outpost_alive", our_outpost_alive);
-        setOutput("Enemy_base_hp", enemy_base_hp);
+        setOutput("Remaining_rounds", remaining_rounds);
         setOutput("Our_base_hp", our_base_hp);
         setOutput("Sentry_mode", sentry_mode);
         setOutput("Sentry_buff", sentry_buff);
@@ -666,7 +666,7 @@ public:
         hp = static_cast<float>(msg->hp);
         enemy_outpost_alive = msg->enemy_outpost_alive;
         our_outpost_alive = msg->our_outpost_alive;
-        enemy_base_hp = static_cast<int>(msg->enemy_base_hp);
+        remaining_rounds = static_cast<int>(msg->remaining_rounds);
         our_base_hp = static_cast<int>(msg->our_base_hp);
         sentry_mode = static_cast<int>(msg->sentry_mode);
         sentry_buff = msg->sentry_buff;
@@ -674,10 +674,10 @@ public:
 
         is_ReadInterface_ = true;
         RCLCPP_INFO(global_node_->get_logger(),
-                    "Callback(7v7) hp=%.1f outpost(enemy=%d,our=%d) base(enemy=%d,our=%d) mode=%d buff=%d",
+                    "Callback(7v7) hp=%.1f outpost(enemy=%d,our=%d) rounds=%d base=%d mode=%d buff=%d",
                     hp,
                     enemy_outpost_alive, our_outpost_alive,
-                    enemy_base_hp, our_base_hp,
+                    remaining_rounds, our_base_hp,
                     sentry_mode,
                     static_cast<int>(sentry_buff));
     }

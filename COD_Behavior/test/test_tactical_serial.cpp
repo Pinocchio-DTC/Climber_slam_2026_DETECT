@@ -30,7 +30,7 @@ private:
         msg.match_time = 180;
         msg.enemy_outpost_alive = true;
         msg.our_outpost_alive = true;
-        msg.enemy_base_hp = 5000;
+        msg.remaining_rounds = 5000;
         msg.sentry_mode = 0;
         msg.sentry_buff = false;
     }

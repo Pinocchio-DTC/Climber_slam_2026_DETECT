@@ -56,7 +56,7 @@ private:
         msg.hp = phase.hp;
         msg.enemy_outpost_alive = true;
         msg.our_outpost_alive = true;
-        msg.enemy_base_hp = 5000;
+        msg.remaining_rounds = 5000;
         msg.our_base_hp = phase.our_base_hp;
         msg.sentry_mode = 0;
         msg.sentry_buff = phase.sentry_buff;
